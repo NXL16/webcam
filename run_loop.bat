@@ -1,24 +1,21 @@
 @echo off
 chcp 65001 >nul
-REM run_loop.bat lives in the resources folder; SystemMonitor.exe is one level up
-set "SCRIPT_DIR=%~dp0"
-set "EXE_PATH=%SCRIPT_DIR%..\SystemMonitor.exe"
+REM Behavior:
+REM  - Default: run once and exit
+REM  - To enable automatic restart on exit/crash, pass the argument: loop
+REM    Example: run_loop.bat loop
 
-REM Marker path checked before restarting. If present, do not restart.
-set "MARKER=%ProgramData%\SystemMonitor\disabled"
+set "exe=C:\Program Files\SystemMonitor\SystemMonitor.exe"
 
-:loop
-if exist "%MARKER%" (
-	echo [run_loop] Disabled marker found at "%MARKER%"; exiting loop.
-	goto :eof
-)
-
-if exist "%EXE_PATH%" (
-	"%EXE_PATH%"
+if "%~1"=="loop" (
+	echo Starting in loop mode: %exe%
+	:loop
+	"%exe%"
+	timeout /t 2 /nobreak >nul
+	goto loop
 ) else (
-	echo [run_loop] SystemMonitor.exe not found at "%EXE_PATH%"
-	timeout /t 5 /nobreak >nul
+	echo Running once: %exe%
+	"%exe%"
 )
 
-timeout /t 2 /nobreak >nul
-goto loop
+exit /b %ERRORLEVEL%
